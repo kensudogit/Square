@@ -48,6 +48,18 @@ export const config = {
   currency: optional("CURRENCY", "JPY"),
   /** 本番障害時に決済受付だけを止めるためのフラグ */
   paymentsEnabled: optional("PAYMENTS_ENABLED", "true") === "true",
+  /**
+   * ビルド済みフロントを同じプロセスから配信するか。
+   * 単一コンテナで動かす構成（Dockerfile）ではこれを使う。
+   * フロントを別ホスティングに置くなら SERVE_STATIC=false にして CORS_ORIGIN を設定する。
+   */
+  serveStatic: optional("SERVE_STATIC", "true") === "true",
+  /**
+   * 起動時にマイグレーションを流すか。
+   * PaaS のリリースコマンドを分けられない場合の逃げ道で、既定は false。
+   * 複数インスタンスを同時に立ち上げる構成では、リリース時に一度だけ流すほうが安全。
+   */
+  runMigrationsOnBoot: optional("RUN_MIGRATIONS", "false") === "true",
   square: {
     environment,
     applicationId,

@@ -29,8 +29,8 @@ drop table if exists courses cascade;
 drop table if exists users cascade;
 `;
 
-async function main() {
-  const drop = process.argv.includes("--drop");
+export async function runMigrations(options: { drop?: boolean } = {}): Promise<void> {
+  const drop = options.drop ?? false;
   if (drop) {
     // --drop はローカルの検証用 DB を作り直すためのもの。本番で誤爆させない
     if (process.env.NODE_ENV === "production") {
@@ -52,9 +52,15 @@ async function main() {
   console.log("テーブル:", rows.map((r) => r.table_name).join(", "));
 }
 
-main()
-  .catch((e) => {
-    console.error("マイグレーションに失敗しました:", e instanceof Error ? e.message : e);
-    process.exitCode = 1;
-  })
-  .finally(closePool);
+// 単体実行されたときだけ動かす（index.ts から import された場合は動かさない）
+const entry = process.argv[1];
+const isMain = entry !== undefined && path.resolve(entry) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  runMigrations({ drop: process.argv.includes("--drop") })
+    .catch((e) => {
+      console.error("マイグレーションに失敗しました:", e instanceof Error ? e.message : e);
+      process.exitCode = 1;
+    })
+    .finally(closePool);
+}

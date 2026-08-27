@@ -18,7 +18,8 @@ Square Web Payments SDK でカード決済を行い、決済完了をトリガ�
 5. [設計 — 崩してはいけない 5 点](#設計--崩してはいけない-5-点)
 6. [ディレクトリ構成](#ディレクトリ構成)
 7. [API](#api)
-8. [本番移行](#本番移行)
+8. [デプロイ（単一コンテナ）](#デプロイ単一コンテナ)
+9. [本番移行](#本番移行)
 
 ---
 
@@ -321,6 +322,71 @@ Square/
 既存の認証基盤があればこの middleware だけ差し替えれば決済側は変更不要。
 
 ---
+
+---
+
+## デプロイ（単一コンテナ）
+
+リポジトリ直下の `Dockerfile` が、API とビルド済みフロントを 1 つのコンテナにまとめる。
+フロントの fetch は `/api/...` の相対パスなので、同一オリジンから配信すれば
+CORS もフロント側の設定変更も不要になる。
+
+```bash
+docker build -t square-payments .
+docker run --rm -p 3000:3000 --env-file server/.env square-payments
+```
+
+### プラットフォーム側で設定する環境変数
+
+**秘密情報はイメージに焼かない。** すべて実行時に環境変数で渡す。
+
+| 変数 | 必須 | 備考 |
+|---|---|---|
+| `DATABASE_URL` | ✓ | マネージド PostgreSQL の接続文字列 |
+| `JWT_SECRET` | ✓ | `openssl rand -hex 32` |
+| `SQUARE_ENVIRONMENT` | ✓ | `sandbox` / `production` |
+| `SQUARE_ACCESS_TOKEN` | ✓ | 環境ごとに別物 |
+| `SQUARE_APPLICATION_ID` | ✓ | 環境ごとに別物 |
+| `SQUARE_LOCATION_ID` | ✓ | **通貨が JPY のもの** |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` | ✓ | Webhook subscription ごとに発行 |
+| `SQUARE_WEBHOOK_NOTIFICATION_URL` | ✓ | **デプロイ後の URL と完全一致**（末尾スラッシュまで） |
+| `PORT` | | 多くの PaaS が自動注入。未設定なら 3000 |
+| `CURRENCY` | | 既定 `JPY` |
+| `PAYMENTS_ENABLED` | | `false` で決済受付だけ停止できる |
+| `RUN_MIGRATIONS` | | `true` で起動時にマイグレーション（下記参照） |
+| `SERVE_STATIC` | | `false` でフロント配信を切る（別ホスティングに置く場合） |
+
+**必須変数が欠けていると起動時に落ちる。** これは意図した挙動で、決済で
+「設定が undefined のまま動き続ける」のを防ぐため。デプロイがクラッシュループ
+したら、まず環境変数の欠落を疑う（ログに変数名が出る）。
+
+### マイグレーション
+
+リリースコマンドを設定できるプラットフォームなら、そちらで一度だけ流すのが安全。
+
+```bash
+node dist/db/migrate.js
+```
+
+分けられない場合は `RUN_MIGRATIONS=true` を設定すると起動時に実行される。
+ただし複数インスタンスを同時起動する構成では同時実行になるため、
+リリース時に一度だけ流す方式に寄せること。
+
+### デプロイ後にやること
+
+1. `SQUARE_WEBHOOK_NOTIFICATION_URL` をデプロイ URL に設定し直す
+2. Square Dashboard の Webhook subscription も**同じ URL**に更新する
+   （署名は URL の文字列を含めて計算されるため、片方だけだと全件 403 になる）
+3. `GET /healthz` が `{"ok":true}` を返すことを確認（DB 接続まで見ている）
+4. 本番移行時は `SQUARE_ENVIRONMENT=production` と production の認証情報一式に差し替え、
+   `npm run preflight` で疎通を確認する
+
+### 補足
+
+- 実行ユーザーは非 root（`node`）
+- `HEALTHCHECK` は `/healthz` を叩くので、DB 断もコンテナの不健全として検知される
+- `.gitattributes` で改行を LF に正規化している。Windows で編集したファイルが
+  CRLF のままコンテナに入ると entrypoint 系が `no such file or directory` で落ちるため
 
 ## 本番移行
 

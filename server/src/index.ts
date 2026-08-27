@@ -2,10 +2,18 @@ import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { logger } from "./logger.js";
 import { closePool, pool } from "./db/pool.js";
+import { runMigrations } from "./db/migrate.js";
 
 async function main() {
   // DB に繋がらないまま起動して、決済のときに初めて気付くのを避ける
   await pool.query("select 1");
+
+  // RUN_MIGRATIONS=true のときだけ。リリースコマンドを分けられない PaaS 向けの逃げ道で、
+  // 複数インスタンスを同時起動する構成ではリリース時に一度だけ流すほうが安全
+  if (config.runMigrationsOnBoot) {
+    logger.info({}, "RUN_MIGRATIONS=true のため起動時マイグレーションを実行します");
+    await runMigrations();
+  }
 
   const app = createApp();
   const server = app.listen(config.port, () => {

@@ -1,0 +1,10 @@
+# チェックアウト時に LF へ正規化する。
+# Windows で編集したファイルが CRLF のままコンテナに入ると、
+# シェルスクリプトや entrypoint が "no such file or directory" で落ちる。
+* text=auto eol=lf
+
+# バイナリは触らない
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary

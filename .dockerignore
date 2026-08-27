@@ -1,0 +1,17 @@
+# ビルドコンテキストを小さくし、秘密情報をイメージに入れないためのリスト。
+# .env をここに入れておくのは重要（COPY で誤って焼き込むのを防ぐ）
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.gitignore
+.gitattributes
+**/*.log
+**/coverage
+**/test
+docker-compose.yml
+Dockerfile
+.dockerignore
+README.md
