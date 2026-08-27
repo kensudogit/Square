@@ -46,9 +46,14 @@ if (environment && environment !== "sandbox" && environment !== "production") {
 if (environment && applicationId) {
   const looksSandbox = applicationId.startsWith("sandbox-");
   if (looksSandbox !== (environment === "sandbox")) {
+    // application ID はブラウザにも渡る公開値なので、先頭を見せて原因を特定しやすくする。
+    // 「一致しません」だけだと、どちらを貼り間違えたのか分からず調べ直しになる
+    const head = applicationId.slice(0, 24);
     problems.push(
-      `SQUARE_ENVIRONMENT=${environment} と SQUARE_APPLICATION_ID の種別が一致しません` +
-        "（sandbox と production の認証情報が混ざっています）",
+      `SQUARE_ENVIRONMENT=${environment} ですが SQUARE_APPLICATION_ID は "${head}…" です。` +
+        (environment === "sandbox"
+          ? "Sandbox の Application ID（sandbox-sq0idb- で始まる）に差し替えてください"
+          : "Production の Application ID（sq0idp- で始まる）に差し替えてください"),
     );
   }
 }
@@ -79,6 +84,11 @@ if (problems.length > 0) {
     "  SQUARE_LOCATION_ID               Locations（通貨が JPY のもの）",
     "  SQUARE_WEBHOOK_SIGNATURE_KEY     Webhooks > Subscriptions",
     "  SQUARE_WEBHOOK_NOTIFICATION_URL  デプロイ後の URL + /api/webhooks/square",
+    "",
+    "SQUARE_WEBHOOK_NOTIFICATION_URL はデプロイするまで確定しないので、初回は",
+    "https://placeholder.invalid/api/webhooks/square のような仮の値で構わない。",
+    "URL が確定したら、この変数と Square Dashboard の Webhook subscription の",
+    "両方を実 URL に更新する（片方だけだと署名が一致せず全件 403 になる）。",
     "",
     "任意: PORT / CURRENCY / PAYMENTS_ENABLED / SERVE_STATIC / RUN_MIGRATIONS / CORS_ORIGIN",
     "=".repeat(70),
