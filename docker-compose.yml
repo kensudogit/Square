@@ -1,0 +1,22 @@
+# 検証用の PostgreSQL。
+# ホストの 5432 で既存の Postgres が動いている場合と衝突しないよう 5433 に割り当てる。
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: square-payments-db
+    environment:
+      POSTGRES_USER: square
+      POSTGRES_PASSWORD: square
+      POSTGRES_DB: square_payments
+    ports:
+      - "5433:5432"
+    volumes:
+      - square-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U square -d square_payments"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  square-pgdata:

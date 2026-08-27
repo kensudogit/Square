@@ -1,0 +1,39 @@
+{
+  "name": "square-payments-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Square Payments API + Webhook。決済完了で受講権限を付与する",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:reset": "tsx src/db/migrate.ts --drop && tsx src/db/seed.ts",
+    "preflight": "node ../../.claude/skills/square-payments-integration/scripts/preflight.mjs",
+    "reconcile": "tsx src/jobs/reconcile.ts",
+    "verify:local": "npm run db:reset && node scripts/verify-local.mjs"
+  },
+  "dependencies": {
+    "cors": "2.8.6",
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "jsonwebtoken": "9.0.3",
+    "pg": "8.23.0",
+    "square": "45.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/jsonwebtoken": "9.0.10",
+    "@types/node": "22.18.9",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
