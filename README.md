@@ -354,6 +354,8 @@ docker run --rm -p 3000:3000 --env-file server/.env square-payments
 | `CURRENCY` | | 既定 `JPY` |
 | `PAYMENTS_ENABLED` | | `false` で決済受付だけ停止できる |
 | `RUN_MIGRATIONS` | | `true` で起動時にマイグレーション（下記参照） |
+| `RUN_SEED` | | `true` で起動時にデモデータ投入。**投入後は false に戻す** |
+| `SEED_PASSWORD` | | デモユーザー共通のパスワード。公開 URL では必ず自分の値にする |
 | `SERVE_STATIC` | | `false` でフロント配信を切る（別ホスティングに置く場合） |
 
 **必須変数が欠けていると起動時に落ちる。** これは意図した挙動で、決済で
@@ -371,6 +373,23 @@ node dist/db/migrate.js
 分けられない場合は `RUN_MIGRATIONS=true` を設定すると起動時に実行される。
 ただし複数インスタンスを同時起動する構成では同時実行になるため、
 リリース時に一度だけ流す方式に寄せること。
+
+### デモデータの投入
+
+`RUN_MIGRATIONS` はテーブルを作るだけで、ユーザーもコースも入らない。
+**この状態ではログインできず、コース一覧も空になる。**
+
+```
+RUN_SEED=true
+SEED_PASSWORD=<自分で決めた値>
+```
+
+を設定して 1 度起動すると投入される。**投入後は `RUN_SEED=false` に戻すこと。**
+既知のパスワードを持つユーザーが作られるため、公開 URL では `SEED_PASSWORD` を
+必ず自分の値にする（未設定だと `demo-password-1234` になる）。
+
+パスワードは `NODE_ENV=production` のときログに出さない。
+PaaS のデプロイログは第三者から見えることがあるため。
 
 ### デプロイ後にやること
 

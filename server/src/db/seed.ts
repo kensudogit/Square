@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { pool, closePool } from "./pool.js";
 import { hashPassword } from "./password.js";
 
@@ -40,7 +42,7 @@ const COURSES = [
   },
 ];
 
-async function main() {
+export async function runSeed(): Promise<void> {
   const passwordHash = hashPassword(DEMO_PASSWORD);
 
   for (const u of USERS) {
@@ -69,15 +71,31 @@ async function main() {
   console.log("シード完了");
   console.log("");
   console.log("  デモユーザー:");
-  for (const u of USERS) console.log(`    ${u.email} / ${DEMO_PASSWORD}`);
+
+  // ★ パスワードは本番のデプロイログに残さない。
+  //   PaaS のログは同僚や外部サービスから見えることがある
+  const showPassword = process.env.NODE_ENV !== "production";
+  for (const u of USERS) {
+    console.log(`    ${u.email}${showPassword ? ` / ${DEMO_PASSWORD}` : ""}`);
+  }
+  if (!showPassword) {
+    console.log("    （パスワードは環境変数 SEED_PASSWORD の値。ログには出しません）");
+  }
+
   console.log("");
   console.log("  コース:");
   for (const c of COURSES) console.log(`    ${c.id.padEnd(20)} ¥${c.price.toLocaleString()}  ${c.title}`);
 }
 
-main()
-  .catch((e) => {
-    console.error("シードに失敗しました:", e instanceof Error ? e.message : e);
-    process.exitCode = 1;
-  })
-  .finally(closePool);
+// 単体実行されたときだけ動かす（index.ts から import された場合は動かさない）
+const entry = process.argv[1];
+const isMain = entry !== undefined && path.resolve(entry) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  runSeed()
+    .catch((e) => {
+      console.error("シードに失敗しました:", e instanceof Error ? e.message : e);
+      process.exitCode = 1;
+    })
+    .finally(closePool);
+}

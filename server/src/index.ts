@@ -3,6 +3,7 @@ import { config } from "./config.js";
 import { logger } from "./logger.js";
 import { closePool, pool } from "./db/pool.js";
 import { runMigrations } from "./db/migrate.js";
+import { runSeed } from "./db/seed.js";
 
 async function main() {
   // DB に繋がらないまま起動して、決済のときに初めて気付くのを避ける
@@ -13,6 +14,13 @@ async function main() {
   if (config.runMigrationsOnBoot) {
     logger.info({}, "RUN_MIGRATIONS=true のため起動時マイグレーションを実行します");
     await runMigrations();
+  }
+
+  // RUN_SEED=true のときだけ。既知のパスワードを持つデモユーザーが作られるので、
+  // 投入が済んだら false に戻す
+  if (config.runSeedOnBoot) {
+    logger.warn({}, "RUN_SEED=true のためデモデータを投入します（投入後は false に戻してください）");
+    await runSeed();
   }
 
   const app = createApp();

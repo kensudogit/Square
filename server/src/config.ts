@@ -90,7 +90,8 @@ if (problems.length > 0) {
     "URL が確定したら、この変数と Square Dashboard の Webhook subscription の",
     "両方を実 URL に更新する（片方だけだと署名が一致せず全件 403 になる）。",
     "",
-    "任意: PORT / CURRENCY / PAYMENTS_ENABLED / SERVE_STATIC / RUN_MIGRATIONS / CORS_ORIGIN",
+    "任意: PORT / CURRENCY / PAYMENTS_ENABLED / SERVE_STATIC / CORS_ORIGIN",
+    "      RUN_MIGRATIONS（テーブル作成） / RUN_SEED + SEED_PASSWORD（デモデータ投入）",
     "=".repeat(70),
     "",
   ];
@@ -121,6 +122,13 @@ export const config = {
    * 複数インスタンスを同時に立ち上げる構成では、リリース時に一度だけ流すほうが安全。
    */
   runMigrationsOnBoot: optional("RUN_MIGRATIONS", "false") === "true",
+  /**
+   * 起動時にデモデータ（ユーザーとコース）を投入するか。既定は false。
+   *
+   * ★ 既知のパスワードを持つユーザーが作られる。公開 URL で動かすなら
+   *   SEED_PASSWORD を必ず自分の値に設定し、投入後は false に戻すこと。
+   */
+  runSeedOnBoot: optional("RUN_SEED", "false") === "true",
   square: {
     environment,
     applicationId,
