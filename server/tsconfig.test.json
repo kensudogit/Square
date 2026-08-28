@@ -1,0 +1,12 @@
+{
+  // テストコードとテスト設定の型検査。
+  // 本体の tsconfig.json は rootDir を src に固定しているため（ビルド成果物の
+  // ディレクトリ構成を保つため）、テストはこちらで別に見る。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+}

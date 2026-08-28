@@ -122,8 +122,51 @@ URL の揺れ（末尾スラッシュ、プロトコル、www）を総当たり�
 cd server && npm test
 ```
 
-ユニットテスト 32 件。署名検証（改竄・URL 相違・署名なし・マルチバイト）、通貨変換、
-冪等性キーの世代規則、終局的エラーコードの分類。**Square にも DB にも接続しない**ので CI に載る。
+サーバーのユニットテスト 246 件。署名検証（改竄・URL 相違・署名なし・マルチバイト）、
+通貨変換、冪等性キーの世代規則、終局的エラーコードの分類に加えて、決済ルート・Webhook
+ハンドラ・リポジトリ層・照合バッチまでを、DB と Square SDK をモックして通す。
+**Square にも DB にも接続しない**ので CI に載る。
+
+```bash
+cd web && npm test
+```
+
+フロントのユニットテスト 83 件（jsdom + Testing Library）。API クライアント、
+Square SDK の読み込み（StrictMode の二重マウント対策）、決済フォームのトークン化・
+3D セキュア・二重送信防止・エラーメッセージの出し分け、画面遷移。
+
+### カバレッジ
+
+```bash
+cd server && npm run test:coverage
+cd web && npm run test:coverage
+```
+
+v8 プロバイダで計測する（TypeScript に計測用の変換を挟まず、vite のソースマップで
+.ts / .tsx の行に戻す）。結果は端末の表に加えて `coverage/` 以下に出る。
+
+| 出力 | 用途 |
+| --- | --- |
+| `coverage/index.html` | ブラウザで開いて未通過の行を色で見る |
+| `coverage/lcov.info` | CI や IDE のカバレッジ拡張に食わせる |
+| `coverage/coverage-summary.json` | ファイル単位の数値。閾値の確認やバッジ生成に使う |
+
+閾値は `vitest.config.ts` の `coverage.thresholds`（statements/lines 85%、functions 85%、
+branches 80%）。**下回るとテストが失敗する**ので、CI では `npm run test:coverage` を
+そのまま実行すればカバレッジの後退を検出できる。現状:
+
+| | statements | branches | functions | lines |
+| --- | --- | --- | --- | --- |
+| server | 99.1% | 96.5% | 98.7% | 99.3% |
+| web | 98.5% | 97.6% | 100% | 100% |
+
+集計から外しているのは、単体テストで意味のある検証ができない起動コードだけ
+（`server/src/index.ts`、`server/src/db/migrate.ts`、`server/src/db/seed.ts`、`web/src/main.tsx`）。
+それ以外は `include` に一致する全ファイルを対象にしているので、テストから一度も
+触れていないファイルは 0% として現れる。
+
+型検査はテストコードも対象にしている（`npm run typecheck`）。サーバー側は本体の
+`tsconfig.json` が `rootDir` を `src` に固定しているため、テストは `tsconfig.test.json` で見る。
 
 ```bash
 cd server && npm run verify:local
@@ -290,8 +333,12 @@ Square/
 │   │   ├── middleware/             requireAuth / rateLimit
 │   │   ├── routes/                 auth / courses / checkout / payments
 │   │   └── jobs/reconcile.ts       照合バッチ
-│   └── test/                       署名・通貨・冪等性のユニットテスト
+│   ├── test/                       ユニットテスト（DB / Square はモック）
+│   ├── vitest.config.ts            テストとカバレッジの設定
+│   └── tsconfig.test.json          テストコードの型検査
 └── web/
+    ├── test/                       ユニットテスト（jsdom + Testing Library）
+    ├── vitest.config.ts            テストとカバレッジの設定
     └── src/
         ├── api.ts                  金額を送らない API クライアント
         ├── App.tsx
